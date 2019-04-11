@@ -3,6 +3,7 @@ import time
 import bme280
 import smbus2
 import serial
+import json
 from flask import Flask, render_template
 
 def read_dust_sensor():
@@ -28,12 +29,12 @@ def index():
     bus = smbus2.SMBus(port)
     calibration_params = bme280.load_calibration_params(bus, address)
     data = bme280.sample(bus, address, calibration_params)
-    temp=int(data.temperature)
+    temp=round(data.temperature, 1)
     pre=int(data.pressure)
     hum=int(data.humidity)
     data = read_dust_sensor()
-    pm10 = data['PM10']
-    pm2_5 = data['PM2_5']
+    pm10 = round(data['PM10'], 1)
+    pm2_5 = round(data['PM2_5'], 1)
     color10 = 'yellow'
     color2_5 = 'yellow'
     if pm10 > 40:
@@ -41,6 +42,32 @@ def index():
     if pm2_5 > 30:
       color2_5 = 'red'
     return render_template('sait.html', temp=temp, hum=hum, pre=pre, pm10=pm10, pm2_5=pm2_5, color10=color10, color2_5=color2_5)
+
+@app.route('/data')
+def get_data():
+    port = 1
+    address = 0x76
+    bus = smbus2.SMBus(port)
+    calibration_params = bme280.load_calibration_params(bus, address)
+    data = bme280.sample(bus, address, calibration_params)
+    temp=round(data.temperature, 1)
+    pre=int(data.pressure)
+    hum=int(data.humidity)
+    data = read_dust_sensor()
+    pm10 = round(data['PM10'], 1)
+    pm2_5 = round(data['PM2_5'], 1)
+    color10 = 'yellow'
+    color2_5 = 'yellow'
+    if pm10 > 40:
+      color10 = 'red'
+    if pm2_5 > 30:
+      color2_5 = 'red'
+    data = {'temp': temp, 'hum': hum, 'pre': pre, 'pm10': pm10, 'pm2_5': pm2_5, 'color10': color10, 'color2_5': color2_5 }
+    return app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
