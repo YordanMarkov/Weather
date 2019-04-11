@@ -1,0 +1,10 @@
+[Unit]
+Description=Weather station
+
+[Service]
+Type=simple
+ExecStart=/home/pi/Weather/Prognoza_sait.py &
+
+[Install]
+WantedBy=multi-user.target
+
