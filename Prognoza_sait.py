@@ -6,68 +6,81 @@ import serial
 import json
 from flask import Flask, render_template
 
-def read_dust_sensor():
+temp=0
+pre=0
+hum=0
+pm10 = 0
+pm2_5 = 0
+color10 = 'yellow'
+color2_5 = 'yellow'
+
+def read_sensors():
+    global temp, pre, hum, pm10 , pm2_5 , color10 , color2_5
+
+    # Read BME280
+    address = 0x76
+    bus = smbus2.SMBus(1)
+    calibration_params = bme280.load_calibration_params(bus, address)
+    data = bme280.sample(bus, address, calibration_params)
+    temp=round(data.temperature, 1)
+    pre=int(data.pressure)
+    hum=int(data.humidity)
+
+    # Read DUST serial
     dev = serial.Serial('/dev/ttyUSB0', 9600)
     if not dev.isOpen():
         dev.open()
+    dev.flushInput()
     msg = dev.read(10)
     assert msg[0] == ord(b'\xaa')
     assert msg[1] == ord(b'\xc0')
     assert msg[9] == ord(b'\xab')
-    pm2_5 = (msg[3] * 256 + msg[2]) / 10.0
-    pm10 = (msg[5] * 256 + msg[4]) / 10.0
     checksum = sum(v for v in msg[2:8]) % 256
     assert checksum == msg[8]
-    return {'PM10': pm10, 'PM2_5': pm2_5}
+    pm2_5 = (msg[3] * 256 + msg[2]) / 10
+    pm10 = (msg[5] * 256 + msg[4]) / 10
+
+    color10 = 'yellow'
+    color2_5 = 'yellow'
+    if pm10 > 40:
+      color10 = 'red'
+    if pm2_5 > 30:
+      color2_5 = 'red'
+
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    port = 1
-    address = 0x76
-    bus = smbus2.SMBus(port)
-    calibration_params = bme280.load_calibration_params(bus, address)
-    data = bme280.sample(bus, address, calibration_params)
-    temp=round(data.temperature, 1)
-    pre=int(data.pressure)
-    hum=int(data.humidity)
-    data = read_dust_sensor()
-    pm10 = round(data['PM10'], 1)
-    pm2_5 = round(data['PM2_5'], 1)
-    color10 = 'yellow'
-    color2_5 = 'yellow'
-    if pm10 > 40:
-      color10 = 'red'
-    if pm2_5 > 30:
-      color2_5 = 'red'
+    try:
+      read_sensors()
+    except Exception as ex:
+      print(ex)
     return render_template('sait.html', temp=temp, hum=hum, pre=pre, pm10=pm10, pm2_5=pm2_5, color10=color10, color2_5=color2_5)
 
 @app.route('/data')
 def get_data():
-    port = 1
-    address = 0x76
-    bus = smbus2.SMBus(port)
-    calibration_params = bme280.load_calibration_params(bus, address)
-    data = bme280.sample(bus, address, calibration_params)
-    temp=round(data.temperature, 1)
-    pre=int(data.pressure)
-    hum=int(data.humidity)
-    data = read_dust_sensor()
-    pm10 = round(data['PM10'], 1)
-    pm2_5 = round(data['PM2_5'], 1)
-    color10 = 'yellow'
-    color2_5 = 'yellow'
-    if pm10 > 40:
-      color10 = 'red'
-    if pm2_5 > 30:
-      color2_5 = 'red'
-    data = {'temp': temp, 'hum': hum, 'pre': pre, 'pm10': pm10, 'pm2_5': pm2_5, 'color10': color10, 'color2_5': color2_5 }
-    return app.response_class(
-        response=json.dumps(data),
-        status=200,
-        mimetype='application/json'
-    )
+    try:
+      read_sensors()
+      return app.response_class(
+          response=json.dumps({
+		'temp': temp, 
+		'hum': hum, 
+		'pre': pre, 
+		'pm10': pm10, 
+		'pm2_5': pm2_5, 
+		'color10': color10, 
+		'color2_5': color2_5 
+ 	  }),
+          status=200,
+          mimetype='application/json'
+      )
+    except Exception as ex:
+      return app.response_class(
+          response=str(ex),
+          status=500,
+          mimetype='application/text'
+      )
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

@@ -57,13 +57,13 @@
 	  var request = new XMLHttpRequest()
 	  request.open('GET', 'http://80.72.69.237:5000/data', true)
 	  request.onload = function() {
-	    var data = JSON.parse(this.response)
 	    if (request.status >= 200 && request.status < 400) {
-	      document.getElementById("temp").innerHTML = data["temp"]
+	      var data = JSON.parse(this.response)
+	      document.getElementById("temp").innerHTML = data["temp"].toFixed(1)
 	      document.getElementById("pre").innerHTML = data["pre"]
               document.getElementById("hum").innerHTML = data["hum"]
-              document.getElementById("pm10").innerHTML = data["pm10"]
-              document.getElementById("pm2_5").innerHTML = data["pm2_5"]
+              document.getElementById("pm10").innerHTML = data["pm10"].toFixed(1)
+              document.getElementById("pm2_5").innerHTML = data["pm2_5"].toFixed(1)
 	      if(data["hum"]<=30){
                 document.getElementById("a1").style.display = "block";
                 $('body').css('background-image', 'url(https://images.pexels.com/photos/912110/pexels-photo-912110.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940)');
@@ -78,7 +78,8 @@
                 $('body').css('background-image', 'url( https://danielphounsavan.files.wordpress.com/2013/10/rain_drops_keep_falling_wallpaper-wide.jpg)');
               }
 	    } else {
-	      console.log('error')
+	       $('body').css('background-image', 'url(https://images.pexels.com/photos/912110/pexels-photo-912110.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940)');
+	      console.log(this.response)
 	    }
 	  }
 	  request.send()
