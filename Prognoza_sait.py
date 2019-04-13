@@ -14,22 +14,24 @@ pm2_5 = 0
 color10 = 'yellow'
 color2_5 = 'yellow'
 
+address = 0x76
+bus = smbus2.SMBus(1)
+calibration_params = bme280.load_calibration_params(bus, address)
+
+dev = serial.Serial('/dev/ttyUSB0', 9600)
+if not dev.isOpen():
+   dev.open()
+
 def read_sensors():
-    global temp, pre, hum, pm10 , pm2_5 , color10 , color2_5
+    global dev, bus, address, calibration_params, temp, pre, hum, pm10 , pm2_5 , color10 , color2_5
 
     # Read BME280
-    address = 0x76
-    bus = smbus2.SMBus(1)
-    calibration_params = bme280.load_calibration_params(bus, address)
     data = bme280.sample(bus, address, calibration_params)
     temp=round(data.temperature, 1)
     pre=int(data.pressure)
     hum=int(data.humidity)
 
-    # Read DUST serial
-    dev = serial.Serial('/dev/ttyUSB0', 9600)
-    if not dev.isOpen():
-        dev.open()
+    # Read PM
     dev.flushInput()
     msg = dev.read(10)
     assert msg[0] == ord(b'\xaa')
@@ -64,13 +66,13 @@ def get_data():
       read_sensors()
       return app.response_class(
           response=json.dumps({
-		'temp': temp, 
-		'hum': hum, 
-		'pre': pre, 
-		'pm10': pm10, 
-		'pm2_5': pm2_5, 
-		'color10': color10, 
-		'color2_5': color2_5 
+		'temp': temp,
+		'hum': hum,
+		'pre': pre,
+		'pm10': pm10,
+		'pm2_5': pm2_5,
+		'color10': color10,
+		'color2_5': color2_5
  	  }),
           status=200,
           mimetype='application/json'
@@ -83,5 +85,4 @@ def get_data():
       )
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
-
+    app.run(debug=False, host='0.0.0.0')
