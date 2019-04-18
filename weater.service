@@ -4,6 +4,8 @@ Description=Weather station
 [Service]
 Type=simple
 ExecStart=/home/pi/Weather/Prognoza_sait.py &
+Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

@@ -55,7 +55,7 @@
   <script>
 	function reload_data() {          
 	  var request = new XMLHttpRequest()
-	  request.open('GET', 'http://80.72.69.237:5000/data', true)
+	  request.open('GET', 'http://192.168.123.110:5000/data', true)
 	  request.onload = function() {
 	    if (request.status >= 200 && request.status < 400) {
 	      document.getElementById('title').style.setProperty('color', 'white')
